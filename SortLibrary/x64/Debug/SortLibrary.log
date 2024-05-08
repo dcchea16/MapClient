@@ -1,0 +1,16 @@
+﻿  SortLibrary.cpp
+C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.h(29,86): warning C4190: 'readDatafromFile' has C-linkage specified, but returns UDT 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>' which is incompatible with C
+  (compiling source file '/SortLibrary.cpp')
+  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
+  see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
+  
+C:\Users\dchea\source\repos\MapClient\SortLibrary\SortLibrary.cpp(68,40): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+  (compiling source file '/SortLibrary.cpp')
+  
+C:\Users\dchea\source\repos\MapClient\SortLibrary\SortLibrary.cpp(69,39): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+  (compiling source file '/SortLibrary.cpp')
+  
+  dllmain.cpp
+  Generating Code...
+  SortLibrary.vcxproj -> C:\Users\dchea\source\repos\MapClient\SortLibrary\x64\Debug\SortLibrary.dll
+  0 File(s) copied

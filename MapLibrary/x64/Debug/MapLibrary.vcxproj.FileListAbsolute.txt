@@ -1,0 +1,2 @@
+C:\Users\dchea\source\repos\CSE687\MapLibrary\x64\Debug\MapLibrary.dll
+C:\Users\dchea\source\repos\MapClient\MapLibrary\x64\Debug\MapLibrary.dll

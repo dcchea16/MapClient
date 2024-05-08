@@ -1,0 +1,13 @@
+﻿  MapClient.cpp
+C:\Users\dchea\source\repos\CSE687\MapLibrary\MapLibrary.h(33,2): warning C4091: '__declspec(dllimport)': ignored on left of 'Map' when no variable is declared
+  (compiling source file 'MapClient.cpp')
+  
+C:\Users\dchea\source\repos\CSE687\ReduceLibrary\ReduceLibrary.h(32,2): warning C4091: '__declspec(dllimport)': ignored on left of 'ReduceLibrary' when no variable is declared
+  (compiling source file 'MapClient.cpp')
+  
+C:\Users\dchea\source\repos\CSE687\FileManagementLibrary\FileManagementLibrary.h(29,86): warning C4190: 'readDatafromFile' has C-linkage specified, but returns UDT 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>' which is incompatible with C
+  (compiling source file 'MapClient.cpp')
+  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
+  see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
+  
+LINK : fatal error LNK1104: cannot open file 'ReduceLibrary.lib'

@@ -1,0 +1,14 @@
+﻿  MapLibrary.cpp
+C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.h(29,86): warning C4190: 'readDatafromFile' has C-linkage specified, but returns UDT 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>' which is incompatible with C
+  (compiling source file '/MapLibrary.cpp')
+  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
+  see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
+  
+C:\Users\dchea\source\repos\MapClient\MapLibrary\MapLibrary.cpp(106,20): warning C4101: 'createFile': unreferenced local variable
+  (compiling source file '/MapLibrary.cpp')
+  
+  dllmain.cpp
+  Generating Code...
+     Creating library C:\Users\dchea\source\repos\MapClient\MapLibrary\x64\Debug\MapLibrary.lib and object C:\Users\dchea\source\repos\MapClient\MapLibrary\x64\Debug\MapLibrary.exp
+  MapLibrary.vcxproj -> C:\Users\dchea\source\repos\MapClient\MapLibrary\x64\Debug\MapLibrary.dll
+  0 File(s) copied

@@ -1,0 +1,2 @@
+C:\Users\dchea\source\repos\CSE687\MapClient\x64\Debug\MapClient.exe
+C:\Users\dchea\source\repos\MapClient\x64\Debug\MapClient.exe

@@ -1,2 +1,8 @@
 *.jfm
 /.vs
+/FileManagementLibrary/.vs/FileManagementLibrary
+/MapClient/.vs/MapClient
+/MapLibrary/.vs/MapLibrary
+/ReduceLibrary/.vs/ReduceLibrary
+/SortLibrary/.vs/SortLibrary/FileContentIndex
+/SortLibrary/.vs/SortLibrary/v17

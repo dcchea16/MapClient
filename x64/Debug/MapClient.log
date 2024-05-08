@@ -1,0 +1,11 @@
+﻿  MapClient.cpp
+C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.h(29,86): warning C4190: 'readDatafromFile' has C-linkage specified, but returns UDT 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>' which is incompatible with C
+  (compiling source file 'MapClient.cpp')
+  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
+  see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
+  
+  MapClient.vcxproj -> C:\Users\dchea\source\repos\MapClient\x64\Debug\MapClient.exe
+  0 File(s) copied
+  0 File(s) copied
+  0 File(s) copied
+  0 File(s) copied
