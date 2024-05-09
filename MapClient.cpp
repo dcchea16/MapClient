@@ -197,6 +197,7 @@ int main(int argc, char* argv[])
             // with all the words in the temp directory files and a vector of of the numbers associated with the word
             map <string, vector<int>> words = pSort->create_word_map(tempDir);
 
+            delete pSort;
 
             // Create a varible to determine if all of the words have been added to the file correctly,
             // if they have it will remain 0
