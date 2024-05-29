@@ -23,6 +23,11 @@ int ReduceLibrary::reduce(string keyInput, vector<int> countInput)
     return exportReduce(keyInput, reducedValue);
 }
 
+void ReduceLibrary::setOutputDirectory(string inputDir)
+{
+    theDir = inputDir;
+}
+
 // Export function that takes in the key and the sum and outputs it to a theOutput.txt file in the specified directory
 int ReduceLibrary::exportReduce(string key, int reducedValue) {
     int added = 1;
@@ -65,7 +70,7 @@ int ReduceLibrary::exportReduce(string key, int reducedValue) {
     return added;
 }
 
-REDUCELIBRARY_API PReduceLibrary* createReduce(string theDirInput)
+REDUCELIBRARY_API PReduceLibrary* createReduce()
 {
-    return new ReduceLibrary(theDirInput);
+    return new ReduceLibrary();
 }

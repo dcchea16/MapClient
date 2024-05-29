@@ -16,6 +16,7 @@ class PReduceLibrary {
 public:
 	//virtual reduce function
 	virtual int reduce(string key, vector<int> count) { return 1; };
+	virtual void setOutputDirectory(string inputDir) {};
 };
 
 class ReduceLibrary : public PReduceLibrary
@@ -23,13 +24,13 @@ class ReduceLibrary : public PReduceLibrary
 public:
 	// Constructor that takes in the directory that the export file
 	// should be in and saves it as a class parameter, theDir
-	ReduceLibrary(string theDirInput)
-		:theDir(theDirInput) {};
+	ReduceLibrary() = default;
 
 	// Function that takes in the string key and vector of intergers, sums the vector,
 	// and passes the sum and key to the export function to output it to a file
 	int reduce(string keyInput, vector<int> countInput);
 
+	void setOutputDirectory(string inputDir);
 private:
 	// Export function called by reduce function that accepts the key and vector sum,
 	// it creates a file in the theDir directory if it does not exist and adds the key and interger to the file
@@ -41,4 +42,4 @@ private:
 };
 
 //factory function to pass a pointer to a reduce class
-extern "C" REDUCELIBRARY_API PReduceLibrary * createReduce(string theDirInput);
+extern "C" REDUCELIBRARY_API PReduceLibrary * createReduce();

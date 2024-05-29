@@ -12,4 +12,5 @@ C:\Users\dchea\source\repos\MapClient\MapLibrary\MapLibrary.cpp(110,20): warning
   Generating Code...
      Creating library C:\Users\dchea\source\repos\MapClient\MapLibrary\x64\Debug\MapLibrary.lib and object C:\Users\dchea\source\repos\MapClient\MapLibrary\x64\Debug\MapLibrary.exp
   MapLibrary.vcxproj -> C:\Users\dchea\source\repos\MapClient\MapLibrary\x64\Debug\MapLibrary.dll
-  0 File(s) copied
+  C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.dll
+  1 File(s) copied

@@ -41,12 +41,17 @@ typedef int (*funcDeleteDirectoryContents)(const string& dirPath);
 typedef string(*funcReadDatafromFile)(const string& filePath);
 typedef int (*funcCreateFile)(const string& filePath);
 typedef PMapLibrary* (*Map_Factory)();
-typedef PReduceLibrary* (*Reduce_Factory)(const string&);
+typedef PReduceLibrary* (*Reduce_Factory)();
 typedef PSortLibrary* (*Sort_Factory)();
 
 void f1(PMapLibrary* pMap, string dirPath, string fileContent)
 {
 	pMap->map(dirPath, fileContent);
+}
+
+void f2(PReduceLibrary* pReduce, string pair1, vector<int> pair2)
+{
+	pReduce->reduce(pair1, pair2);
 }
 
 int main(int argc, char* argv[])
@@ -206,27 +211,32 @@ int main(int argc, char* argv[])
 			// if they have it will remain 0
 			int isSuccessful = 0;
 
-			// Creates a Reduce class that saves the output directory
-			auto pReduce = reduceFactory(outputDir);
-			//if the reduce class is not created, inform the user
-			if (!pReduce) {
-				cerr << "Error: reduce factory failed\n";
-				return 1;
-			}
-
 			// Loop to run through the string vector pairs in the map and use a reduce class
 			// to add the word and the vector sum to an output file in the output directory
+			vector<thread> threads1;
 			for (const auto& pair : words)
 			{
-				// Call the reduce function that adds together the vector to create a vector sum
-				// and outputs the key and the sum to a file in the output directory
-				// Reduce function returns 0 if it is successful at adding it and returns 1 if unsuccessful,
-				// that number is added to isSuccessful
-				isSuccessful = isSuccessful + pReduce->reduce(pair.first, pair.second);
+				// Creates a Reduce class that saves the output directory
+				auto pReduce = reduceFactory();
+				//if the reduce class is not created, inform the user
+				if (!pReduce) {
+					cerr << "Error: reduce factory failed\n";
+					return 1;
+				}
+				pReduce->setOutputDirectory(outputDir);
+				//// Call the reduce function that adds together the vector to create a vector sum
+				//// and outputs the key and the sum to a file in the output directory
+				//// Reduce function returns 0 if it is successful at adding it and returns 1 if unsuccessful,
+				//// that number is added to isSuccessful
+				//isSuccessful = isSuccessful + pReduce->reduce(pair.first, pair.second);
+				threads1.emplace_back(f2, pReduce, pair.first, pair.second);
+			}
+
+			for (auto& thr : threads1)
+			{
+				thr.join();
 
 			}
-			// release reduce class memory
-			delete pReduce;
 
 			// If the previous loop was able to add all of the key, sum pairs to the file
 			// an success file is created in the output directory

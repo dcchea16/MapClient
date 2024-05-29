@@ -1,12 +1,15 @@
-﻿  ReduceLibrary.cpp
+﻿  pch.cpp
+  dllmain.cpp
+  ReduceLibrary.cpp
 C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.h(29,86): warning C4190: 'readDatafromFile' has C-linkage specified, but returns UDT 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>' which is incompatible with C
   (compiling source file '/ReduceLibrary.cpp')
   C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
   see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
   
-C:\Users\dchea\source\repos\MapClient\ReduceLibrary\ReduceLibrary.cpp(56,36): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+C:\Users\dchea\source\repos\MapClient\ReduceLibrary\ReduceLibrary.cpp(61,36): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
   (compiling source file '/ReduceLibrary.cpp')
   
+  Generating Code...
      Creating library C:\Users\dchea\source\repos\MapClient\ReduceLibrary\x64\Debug\ReduceLibrary.lib and object C:\Users\dchea\source\repos\MapClient\ReduceLibrary\x64\Debug\ReduceLibrary.exp
   ReduceLibrary.vcxproj -> C:\Users\dchea\source\repos\MapClient\ReduceLibrary\x64\Debug\ReduceLibrary.dll
   0 File(s) copied
