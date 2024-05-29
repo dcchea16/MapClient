@@ -1,3 +1,4 @@
+
 #include "pch.h"
 #include "framework.h"
 #include "FileManagementLibrary.h"
@@ -11,6 +12,7 @@ using std::cerr;
 using std::ofstream;
 using std::ifstream;
 using std::istreambuf_iterator;
+
 
 // Function that will create a directory, given a directory path as dirPath
 FILEMANAGEMENTLIBRARY_API int createDirectory(const string& dirPath)
@@ -73,6 +75,11 @@ FILEMANAGEMENTLIBRARY_API int readAllDirectoryFileContents(const string& dirPath
 	// Iterate through all files in the given directory
 	for (const auto& entry : std::filesystem::directory_iterator(dirPath))
 	{
+		//Skip the allWords.txt file in order to not double count
+		string fileName = entry.path().filename().string();
+		if (fileName=="allWords.txt") {
+			continue;
+		}
 		// Read data from each file
 		string contents = readDatafromFile(entry.path().string());
 		// Write data from each file to the single output file
@@ -171,4 +178,19 @@ FILEMANAGEMENTLIBRARY_API int writeDataToFile(const string& filePath, const stri
 	ofs << data;
 	ofs.close();
 	return 0;
+}
+
+FILEMANAGEMENTLIBRARY_API int deleteFolder(const string& folderPath) {
+	//checks if folder exists
+	if (!std::filesystem::exists(folderPath))
+	{
+		cerr << "Error directory path (" << folderPath << ") doesn't exist!\n";
+		return 1;
+	}
+	//if it does delete its contents and remove the folder
+	else {
+		deleteDirectoryContents(folderPath);
+		std::filesystem::remove(folderPath);
+	}
+	
 }
