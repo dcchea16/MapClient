@@ -8,8 +8,8 @@ Professor Scott Roueche
 CSE-687 Object Oriented Design
 
 Syracuse University
-Project Phase 3
-05/29/2024
+Project Phase 2
+05/08/2024
 This is the driver class for MapReduce. The program will take an input directory where text files
 are stored and will ultimately produce a single output file that contains a list of words and
 their associated counts in the originating input files.*/
@@ -33,8 +33,11 @@ using std::cout;
 using std::cin;
 using std::cerr;
 using std::thread;
+using std::mutex;
+using std::lock_guard;
 using std::promise;
 using std::future;
+using std::to_string;
 
 //creates typedefs for the file management functions used in this file
 typedef int (*funcCreateDirectory)(const string& dirPath);
@@ -44,20 +47,23 @@ typedef int (*funcDeleteDirectoryContents)(const string& dirPath);
 typedef string(*funcReadDatafromFile)(const string& filePath);
 typedef int (*funcCreateFile)(const string& filePath);
 typedef int (*funcWriteToFile)(const string&, const string&);
+typedef int (*funcDeleteFolder)(const string&);
 typedef PMap* (*Map_Factory)();
 typedef PReduceLibrary* (*Reduce_Factory)();
 typedef PSort* (*Sort_Factory)();
 
+
+//function run by map threads that maps the words in the file to the file name
 void f1(PMap* pMap, string dirPath, string fileContent)
 {
 	pMap->map(dirPath, fileContent);
 }
 
+//function run by the reduce threads that reduces the words in the file to the output file
 int f2(PSort* pSort, string tempDir, string outputDir, string fileName)
 {
 	// Call the create_word_map function, which goes through the temp directory and returns a map
 		// with all the words in the temp directory files and a vector of of the numbers associated with the word
-
 	map <string, vector<int>> words = pSort->create_word_map(tempDir);
 	// Load the DLLs
 	int isSuccessful = 0;
@@ -94,9 +100,11 @@ int f2(PSort* pSort, string tempDir, string outputDir, string fileName)
 		}
 	}
 	else {
+		//let the user know if the reduce library is not loaded
 		cerr << "Error:Unable to load Reduce Library.";
 		isSuccessful = 1;
 	}
+	//return 0 if successful and 1 if not
 	return isSuccessful;
 }
 
@@ -138,8 +146,6 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-
-
 		//loads the reduce class factory function from the DLL
 		auto sortFactory = reinterpret_cast<Sort_Factory>(GetProcAddress(sortDLL, "createSort"));
 		if (!sortFactory) {
@@ -155,6 +161,7 @@ int main(int argc, char* argv[])
 		funcCreateFile createFile = (funcCreateFile)GetProcAddress(fileDLL, "createFile");
 		funcCreateDirectory createDirectory = (funcCreateDirectory)GetProcAddress(fileDLL, "createDirectory");
 		funcWriteToFile writeDataToFile = (funcWriteToFile)GetProcAddress(fileDLL, "writeDataToFile");
+		funcDeleteFolder deleteFolder = (funcDeleteFolder)GetProcAddress(fileDLL, "deleteFolder");
 
 
 		//if the file management functions are found proceed with program
@@ -219,26 +226,34 @@ int main(int argc, char* argv[])
 				deleteDirectoryContents(outputDir);
 			}
 
+			// Create a vector of threads to run the map function
 			vector<thread> mapThreads;
 			// Iterate through the input files in the input directory
 			for (const auto& entry : std::filesystem::directory_iterator(inputDir))
 			{
+				// Create a map object
 				auto pMap = mapFactory();
 				pMap->setTempDirectory(tempDir1);
 				// Read each file and output its contents
 				string fileContent = readDatafromFile(entry.path().string());
+				// Create a thread to run the map function
 				mapThreads.emplace_back(f1, pMap, entry.path().filename().string(), fileContent);
 			}
 
+			// Wait for all the threads to finish
 			for (auto& thr : mapThreads)
 			{
 				thr.join();
 			}
 
-			int numOfFolders = 2;
+			//variable to hold the number of folders the temp files will be divided into
+			int numOfFolders = 4;
+			//varible to hold the names of the folders
 			vector<string> reduceDir;
+
+			// Create the reduce directories
 			for (int i = 0; i < numOfFolders; i++) {
-				string reduceDirName = tempDir + "\\reduceDir" + std::to_string(i);
+				string reduceDirName = tempDir + "\\reduceDir" + to_string(i);
 				reduceDir.push_back(reduceDirName);
 				if (createDirectory(reduceDirName) != 0) {
 					cerr << "Error: Failed to create directory " << reduceDirName << "\n";
@@ -246,29 +261,35 @@ int main(int argc, char* argv[])
 				}
 			}
 
+			//variable used as a counter to determine which folder the file will be placed in
 			int fileNumber = 1;
 			for (const auto& entry : std::filesystem::directory_iterator(tempDir)) {
 
+				// Skip the file if it is a directory
+				//variable to hold the name of the current file
 				string fileName = entry.path().filename().string();
+				//variable to determine if the file name matches any of the folder names
 				bool isFolderName = false;
-
+				//cycle through the folder names to check if the file name matches
 				for (const auto& folderName : reduceDir) {
 					if (fileName == std::filesystem::path(folderName).filename().string()) {
 						isFolderName = true;
 						break;
 					}
 				}
-
 				if (isFolderName) {
 					continue; // Skip this file if its name matches any folder name in reduceDir
 				}
 
+				// Determine which folder the file will be placed in
 				int folderNumber = fileNumber % numOfFolders;
+				// Create the file in the appropriate reduce directory
 				string reduceFileName = reduceDir[folderNumber] + "\\" + entry.path().filename().string();
 				if (createFile(reduceFileName) != 0) {
 					cerr << "Error: Failed to create file " << reduceFileName << "\n";
 					return 1;
 				}
+				// Read the file and write its contents to the file in the reduce folder
 				string fileContent = readDatafromFile(entry.path().string());
 				if (writeDataToFile(reduceFileName, fileContent) != 0) {
 					cerr << "Error: Failed to write data to file " << reduceFileName << "\n";
@@ -278,6 +299,7 @@ int main(int argc, char* argv[])
 			}
 
 
+			//create a directory to hold the intermediate output files
 			string tempOutputDir = tempDir + "\\tempOutput" ;
 			reduceDir.push_back(tempOutputDir);
 			if (createDirectory(tempOutputDir) != 0) {
@@ -285,21 +307,23 @@ int main(int argc, char* argv[])
 				return 1;
 			}
 
+			//vector of threads to run the sort and reduce function
 			vector<thread> reduceThreads;
-			// Create a varible to determine if all of the words have been added to the file correctly,
-			// if they have it will remain 0
-
-			std::vector<int> results;
-			std::mutex mtx;
+			//vector to hold the results of the threads
+			vector<int> results;
+			//lock to ensure that the results vector is not accessed by multiple threads at the same time
+			mutex mtx;
 			for (int i = 0; i < numOfFolders; i++)
 			{
+				// Create a sort object
 				auto pSort = sortFactory();
-				string fileName = "output" + std::to_string(i) + ".txt";
-
+				//determine the output file name
+				string fileName = "output" + to_string(i) + ".txt";
+				// Create a thread to run the sort and reduce functions the function will return 0 if successful and 1 if not, the result is added to the results vector
 				reduceThreads.emplace_back([&results, &mtx, pSort, reduceDir, tempOutputDir, fileName, i]() {
 					int result = f2(pSort, reduceDir[i], tempOutputDir, fileName);
 					{
-						std::lock_guard<std::mutex> lock(mtx);
+						lock_guard<mutex> lock(mtx);
 						results.push_back(result);
 					}
 					});
@@ -312,7 +336,10 @@ int main(int argc, char* argv[])
 				thr.join();
 
 			}
+
+			//variable to hold the sum of the results vector
 			int isSuccessful = 0;
+			//cycle through the results vector and add the results to the isSuccessful variable
 			for (const auto& result : results) {
 				isSuccessful += result;
 			}
@@ -321,6 +348,11 @@ int main(int argc, char* argv[])
 			string fileName = "output.txt";
 			//calls function that runs sort and reduce on the temp output directory
 			isSuccessful += f2(sortFactory(), tempOutputDir,outputDir1, fileName);
+
+			//Delete the temp reduce directories
+			for (auto folder: reduceDir) {
+				isSuccessful += deleteFolder(folder);
+			}
 		
 			// If the previous loop was able to add all of the key, sum pairs to the file
 			// an success file is created in the output directory
