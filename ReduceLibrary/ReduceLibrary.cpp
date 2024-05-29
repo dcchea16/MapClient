@@ -23,9 +23,10 @@ int ReduceLibrary::reduce(string keyInput, vector<int> countInput)
     return exportReduce(keyInput, reducedValue);
 }
 
-void ReduceLibrary::setOutputDirectory(string inputDir)
+void ReduceLibrary::setOutputDirectory(string inputDir, string inputfileName)
 {
     theDir = inputDir;
+	fileName = inputfileName;
 }
 
 // Export function that takes in the key and the sum and outputs it to a theOutput.txt file in the specified directory
@@ -40,7 +41,7 @@ int ReduceLibrary::exportReduce(string key, int reducedValue) {
         createFile = (funcCreateFile)GetProcAddress(hDLL, "createFile");
         writeDataToFile = (funcWriteToFile)GetProcAddress(hDLL, "writeDataToFile");
         // Create the file name using the directory path and the name of the file
-        string outputFileName = theDir + "\\theOutput.txt";
+        string outputFileName = theDir + "\\"+ fileName;
 
         // If the file exists don't need to do anything
         if (std::filesystem::exists(outputFileName))
