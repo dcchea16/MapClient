@@ -17,9 +17,13 @@ typedef int (*funcWriteToFile)(const string&, const string&);
 
 
 // Factory function to create a Map class and return a pointer
-PMapLibrary* createMap(string inputTempDir)
+PMapLibrary* createMap()
 {
-    return new MapLibrary(inputTempDir);
+    return new MapLibrary();
+}
+
+void MapLibrary::setTempDirectory(const string& inputDir) {
+    tempDirectory = inputDir;
 }
 
 // Processes the input key-value pair to tokenize and count word occurrences

@@ -17,6 +17,7 @@ using std::unordered_map;
 class PMapLibrary {
 public:
     virtual void map(const string& key, const string& value) {};
+    virtual void setTempDirectory(const string& inputDir) {};
 
 };
 
@@ -25,13 +26,15 @@ class MapLibrary : public PMapLibrary
 {
 public:
     // Constructor to initialize the Map with a directory for temporary storage
-    MapLibrary(string tempDir) : tempDirectory(tempDir) {}  // Initializes the tempDirectory member with the provided directory path
+    MapLibrary() = default;  // Initializes the tempDirectory member with the provided directory path
 
     // Process a key-value pair by tokenizing and counting words
     void map(const string& key, const string& value);
 
     // Export the current word counts to a file
     void exportToFile();
+
+    void setTempDirectory(const string& inputDir);
 
 private:
     unordered_map<string, int> wordCount; // Hash table to store word counts
@@ -40,8 +43,8 @@ private:
     const int bufferThreshold = 500000; // Threshold for the buffer
     string fileName; // Name of the temp file where word counts are stored
 
-    const string tempDirectory; // Directory path for storing temp files
+    string tempDirectory; // Directory path for storing temp files
 };
 
 // Factory function to create a Map class and return a pointer
-extern "C" MAPLIBRARY_API PMapLibrary * createMap(string inputTemp);
+extern "C" MAPLIBRARY_API PMapLibrary * createMap();
