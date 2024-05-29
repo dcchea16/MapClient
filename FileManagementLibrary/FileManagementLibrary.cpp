@@ -83,7 +83,6 @@ FILEMANAGEMENTLIBRARY_API int readAllDirectoryFileContents(const string& dirPath
 // Function that will delete all file contents from a directory, given a directory path as dirPath
 FILEMANAGEMENTLIBRARY_API int deleteDirectoryContents(const string& dirPath)
 {
-	std::cout << "call this delete dir contents: " << dirPath << "\n";
 	// Check if the directory path exists
 	if (!std::filesystem::exists(dirPath))
 	{
@@ -124,7 +123,6 @@ FILEMANAGEMENTLIBRARY_API int createFile(const string& filePath)
 // Function that will delete a single file, given a file path as filePath
 FILEMANAGEMENTLIBRARY_API int deleteFile(const string& filePath)
 {
-	std::cout << "call this deleteFile " << filePath << "\n";
 	// Check if the file path exists
 	if (!std::filesystem::exists(filePath))
 	{

@@ -29,8 +29,6 @@ void MapLibrary::setTempDirectory(const string& inputDir) {
 // Processes the input key-value pair to tokenize and count word occurrences
 void MapLibrary::map(const string& key, const string& value)
 {
-    cout << "calling map\n";
-
     HINSTANCE hDLL;
     funcCreateFile createFile;
     funcWriteToFile writeDataToFile;
@@ -46,8 +44,6 @@ void MapLibrary::map(const string& key, const string& value)
             // Constructs the file name from the key
             fileName = tempDirectory + "\\" + key;
             // Attempts to create a file for the output
-            cout << "this is the directory: " << tempDirectory << "\n";
-            cout << "this is the filename: " << fileName << "\n";
             createFile(fileName);
 
             // Delimiters used for splitting the value into tokens

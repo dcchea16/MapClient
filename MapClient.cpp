@@ -179,7 +179,6 @@ int main(int argc, char* argv[])
 				// Read each file and output its contents
 				string fileContent = readDatafromFile(entry.path().string());
 				threads.emplace_back(f1, pMap, entry.path().filename().string(), fileContent);
-				cout << "Created thread\n";
 			}
 
 			for (auto& thr : threads)

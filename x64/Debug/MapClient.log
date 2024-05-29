@@ -4,8 +4,9 @@ C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrar
   C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
   see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
   
-C:\Users\dchea\source\repos\MapClient\MapClient.cpp(181,35): error C3867: 'PMapLibrary::map': non-standard syntax; use '&' to create a pointer to member
-C:\Users\dchea\source\repos\MapClient\MapClient.cpp(181,12): error C2672: 'std::vector<std::thread,std::allocator<std::thread>>::emplace_back': no matching overloaded function found
-  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\vector(860,33):
-  could be 'decltype(auto) std::vector<std::thread,std::allocator<std::thread>>::emplace_back(_Valty &&...)'
-  
+  MapClient.vcxproj -> C:\Users\dchea\source\repos\MapClient\x64\Debug\MapClient.exe
+  0 File(s) copied
+  C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.dll
+  1 File(s) copied
+  0 File(s) copied
+  0 File(s) copied
