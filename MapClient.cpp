@@ -8,8 +8,8 @@ Professor Scott Roueche
 CSE-687 Object Oriented Design
 
 Syracuse University
-Project Phase 2
-05/08/2024
+Project Phase 3
+05/29/2024
 This is the driver class for MapReduce. The program will take an input directory where text files
 are stored and will ultimately produce a single output file that contains a list of words and
 their associated counts in the originating input files.*/
@@ -22,7 +22,7 @@ their associated counts in the originating input files.*/
 #include <iostream>
 #include <filesystem>
 #include <thread>
-#include <mutex>
+#include <future>
 #define DllImport   __declspec( dllimport )
 
 
@@ -33,6 +33,8 @@ using std::cout;
 using std::cin;
 using std::cerr;
 using std::thread;
+using std::promise;
+using std::future;
 
 //creates typedefs for the file management functions used in this file
 typedef int (*funcCreateDirectory)(const string& dirPath);
@@ -42,32 +44,32 @@ typedef int (*funcDeleteDirectoryContents)(const string& dirPath);
 typedef string(*funcReadDatafromFile)(const string& filePath);
 typedef int (*funcCreateFile)(const string& filePath);
 typedef int (*funcWriteToFile)(const string&, const string&);
-typedef PMapLibrary* (*Map_Factory)();
+typedef PMap* (*Map_Factory)();
 typedef PReduceLibrary* (*Reduce_Factory)();
-typedef PSortLibrary* (*Sort_Factory)();
+typedef PSort* (*Sort_Factory)();
 
 void f1(PMap* pMap, string dirPath, string fileContent)
 {
 	pMap->map(dirPath, fileContent);
 }
 
-void f2(PSort* pSort, string tempDir, string outputDir, string fileName)
+int f2(PSort* pSort, string tempDir, string outputDir, string fileName)
 {
 	// Call the create_word_map function, which goes through the temp directory and returns a map
 		// with all the words in the temp directory files and a vector of of the numbers associated with the word
 
 	map <string, vector<int>> words = pSort->create_word_map(tempDir);
-	int isSuccessful = 0;
 	// Load the DLLs
+	int isSuccessful = 0;
 	HINSTANCE reduceDLL;
-	const wchar_t* reducelibName = L"ReduceLibrary";
+	const wchar_t* reducelibName = L"Reduce";
 	reduceDLL = LoadLibraryEx(reducelibName, NULL, NULL);
 	if (reduceDLL != NULL) {
 		//loads the reduce class factory function from the DLL
 		auto reduceFactory = reinterpret_cast<Reduce_Factory>(GetProcAddress(reduceDLL, "createReduce"));
 		if (!reduceFactory) {
 			cerr << "Error: Unable to find reduce factory\n";
-			return;
+			return 1;
 		}
 
 		// Loop to run through the string vector pairs in the map and use a reduce class
@@ -80,7 +82,7 @@ void f2(PSort* pSort, string tempDir, string outputDir, string fileName)
 			//if the reduce class is not created, inform the user
 			if (!pReduce) {
 				cerr << "Error: reduce factory failed\n";
-				return;
+				return 1;
 			}
 			pReduce->setOutputDirectory(outputDir, fileName);
 			//// Call the reduce function that adds together the vector to create a vector sum
@@ -93,7 +95,9 @@ void f2(PSort* pSort, string tempDir, string outputDir, string fileName)
 	}
 	else {
 		cerr << "Error:Unable to load Reduce Library.";
+		isSuccessful = 1;
 	}
+	return isSuccessful;
 }
 
 int main(int argc, char* argv[])
@@ -103,9 +107,9 @@ int main(int argc, char* argv[])
 	HINSTANCE mapDLL;
 	HINSTANCE reduceDLL;
 	HINSTANCE sortDLL;
-	const wchar_t* filelibName = L"FileManagementLibrary";
+	const wchar_t* filelibName = L"FileManagement";
 	const wchar_t* maplibName = L"MapLibrary";
-	const wchar_t* reducelibName = L"ReduceLibrary";
+	const wchar_t* reducelibName = L"Reduce";
 	const wchar_t* sortlibName = L"SortLibrary";
 
 	fileDLL = LoadLibraryEx(filelibName, NULL, NULL);
@@ -284,24 +288,39 @@ int main(int argc, char* argv[])
 			vector<thread> reduceThreads;
 			// Create a varible to determine if all of the words have been added to the file correctly,
 			// if they have it will remain 0
-			int isSuccessful = 0;
+
+			std::vector<int> results;
+			std::mutex mtx;
 			for (int i = 0; i < numOfFolders; i++)
 			{
 				auto pSort = sortFactory();
 				string fileName = "output" + std::to_string(i) + ".txt";
-				reduceThreads.emplace_back(f2, pSort, reduceDir[i], tempOutputDir, fileName);
+
+				reduceThreads.emplace_back([&results, &mtx, pSort, reduceDir, tempOutputDir, fileName, i]() {
+					int result = f2(pSort, reduceDir[i], tempOutputDir, fileName);
+					{
+						std::lock_guard<std::mutex> lock(mtx);
+						results.push_back(result);
+					}
+					});
 
 			}
 
-
+			// Wait for all the threads to finish
 			for (auto& thr : reduceThreads)
 			{
 				thr.join();
 
 			}
-			string fileName = "output.txt";
-			f2(sortFactory(), tempOutputDir,outputDir1, fileName);
+			int isSuccessful = 0;
+			for (const auto& result : results) {
+				isSuccessful += result;
+			}
 
+			// Create a variable to hold the output file name
+			string fileName = "output.txt";
+			//calls function that runs sort and reduce on the temp output directory
+			isSuccessful += f2(sortFactory(), tempOutputDir,outputDir1, fileName);
 		
 			// If the previous loop was able to add all of the key, sum pairs to the file
 			// an success file is created in the output directory
