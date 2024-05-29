@@ -35,23 +35,65 @@ using std::cerr;
 using std::thread;
 
 //creates typedefs for the file management functions used in this file
+typedef int (*funcCreateDirectory)(const string& dirPath);
 typedef int (*funcIsDirectoryPresent)(const string& dirPath);
 typedef int (*funcIsDirectoryEmpty)(const string& dirPath);
 typedef int (*funcDeleteDirectoryContents)(const string& dirPath);
 typedef string(*funcReadDatafromFile)(const string& filePath);
 typedef int (*funcCreateFile)(const string& filePath);
+typedef int (*funcWriteToFile)(const string&, const string&);
 typedef PMapLibrary* (*Map_Factory)();
 typedef PReduceLibrary* (*Reduce_Factory)();
 typedef PSortLibrary* (*Sort_Factory)();
 
-void f1(PMapLibrary* pMap, string dirPath, string fileContent)
+void f1(PMap* pMap, string dirPath, string fileContent)
 {
 	pMap->map(dirPath, fileContent);
 }
 
-void f2(PReduceLibrary* pReduce, string pair1, vector<int> pair2)
+void f2(PSort* pSort, string tempDir, string outputDir, string fileName)
 {
-	pReduce->reduce(pair1, pair2);
+	// Call the create_word_map function, which goes through the temp directory and returns a map
+		// with all the words in the temp directory files and a vector of of the numbers associated with the word
+
+	map <string, vector<int>> words = pSort->create_word_map(tempDir);
+	int isSuccessful = 0;
+	// Load the DLLs
+	HINSTANCE reduceDLL;
+	const wchar_t* reducelibName = L"ReduceLibrary";
+	reduceDLL = LoadLibraryEx(reducelibName, NULL, NULL);
+	if (reduceDLL != NULL) {
+		//loads the reduce class factory function from the DLL
+		auto reduceFactory = reinterpret_cast<Reduce_Factory>(GetProcAddress(reduceDLL, "createReduce"));
+		if (!reduceFactory) {
+			cerr << "Error: Unable to find reduce factory\n";
+			return;
+		}
+
+		// Loop to run through the string vector pairs in the map and use a reduce class
+		// to add the word and the vector sum to an output file in the output directory
+		for (const auto& pair : words)
+		{
+
+			// Creates a Reduce class that saves the output directory
+			auto pReduce = reduceFactory();
+			//if the reduce class is not created, inform the user
+			if (!pReduce) {
+				cerr << "Error: reduce factory failed\n";
+				return;
+			}
+			pReduce->setOutputDirectory(outputDir, fileName);
+			//// Call the reduce function that adds together the vector to create a vector sum
+			//// and outputs the key and the sum to a file in the output directory
+			//// Reduce function returns 0 if it is successful at adding it and returns 1 if unsuccessful,
+			//// that number is added to isSuccessful
+			//isSuccessful = isSuccessful + pReduce->reduce(pair.first, pair.second);
+			isSuccessful = isSuccessful + pReduce->reduce(pair.first, pair.second);
+		}
+	}
+	else {
+		cerr << "Error:Unable to load Reduce Library.";
+	}
 }
 
 int main(int argc, char* argv[])
@@ -92,12 +134,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-		//loads the reduce class factory function from the DLL
-		auto reduceFactory = reinterpret_cast<Reduce_Factory>(GetProcAddress(reduceDLL, "createReduce"));
-		if (!reduceFactory) {
-			cerr << "Error: Unable to find reduce factory\n";
-			return 1;
-		}
+
 
 		//loads the reduce class factory function from the DLL
 		auto sortFactory = reinterpret_cast<Sort_Factory>(GetProcAddress(sortDLL, "createSort"));
@@ -112,6 +149,9 @@ int main(int argc, char* argv[])
 		funcDeleteDirectoryContents deleteDirectoryContents = (funcDeleteDirectoryContents)GetProcAddress(fileDLL, "deleteDirectoryContents");
 		funcReadDatafromFile readDatafromFile = (funcReadDatafromFile)GetProcAddress(fileDLL, "readDatafromFile");
 		funcCreateFile createFile = (funcCreateFile)GetProcAddress(fileDLL, "createFile");
+		funcCreateDirectory createDirectory = (funcCreateDirectory)GetProcAddress(fileDLL, "createDirectory");
+		funcWriteToFile writeDataToFile = (funcWriteToFile)GetProcAddress(fileDLL, "writeDataToFile");
+
 
 		//if the file management functions are found proceed with program
 		if (isDirectoryPresent != NULL && isDirectoryEmpty != NULL && deleteDirectoryContents != NULL && readDatafromFile != NULL && createFile != NULL) {
@@ -175,7 +215,7 @@ int main(int argc, char* argv[])
 				deleteDirectoryContents(outputDir);
 			}
 
-			vector<thread> threads;
+			vector<thread> mapThreads;
 			// Iterate through the input files in the input directory
 			for (const auto& entry : std::filesystem::directory_iterator(inputDir))
 			{
@@ -183,61 +223,86 @@ int main(int argc, char* argv[])
 				pMap->setTempDirectory(tempDir1);
 				// Read each file and output its contents
 				string fileContent = readDatafromFile(entry.path().string());
-				threads.emplace_back(f1, pMap, entry.path().filename().string(), fileContent);
+				mapThreads.emplace_back(f1, pMap, entry.path().filename().string(), fileContent);
 			}
 
-			for (auto& thr : threads)
+			for (auto& thr : mapThreads)
 			{
 				thr.join();
 			}
 
-			// Create a Sort class
-			auto pSort = sortFactory();
-
-			//if the sort class is not created, inform the user
-			if (!pSort) {
-				cerr << "Error: sort factory failed\n";
-				return 1;
-
+			int numOfFolders = 2;
+			vector<string> reduceDir;
+			for (int i = 0; i < numOfFolders; i++) {
+				string reduceDirName = tempDir + "\\reduceDir" + std::to_string(i);
+				reduceDir.push_back(reduceDirName);
+				if (createDirectory(reduceDirName) != 0) {
+					cerr << "Error: Failed to create directory " << reduceDirName << "\n";
+					return 1;
+				}
 			}
 
-			// Call the create_word_map function, which goes through the temp directory and returns a map
-			// with all the words in the temp directory files and a vector of of the numbers associated with the word
-			map <string, vector<int>> words = pSort->create_word_map(tempDir);
+			int fileNumber = 1;
+			for (const auto& entry : std::filesystem::directory_iterator(tempDir)) {
 
-			delete pSort;
+				string fileName = entry.path().filename().string();
+				bool isFolderName = false;
 
+				for (const auto& folderName : reduceDir) {
+					if (fileName == std::filesystem::path(folderName).filename().string()) {
+						isFolderName = true;
+						break;
+					}
+				}
+
+				if (isFolderName) {
+					continue; // Skip this file if its name matches any folder name in reduceDir
+				}
+
+				int folderNumber = fileNumber % numOfFolders;
+				string reduceFileName = reduceDir[folderNumber] + "\\" + entry.path().filename().string();
+				if (createFile(reduceFileName) != 0) {
+					cerr << "Error: Failed to create file " << reduceFileName << "\n";
+					return 1;
+				}
+				string fileContent = readDatafromFile(entry.path().string());
+				if (writeDataToFile(reduceFileName, fileContent) != 0) {
+					cerr << "Error: Failed to write data to file " << reduceFileName << "\n";
+					return 1;
+				}
+				fileNumber++;
+			}
+
+
+			string tempOutputDir = tempDir + "\\tempOutput" ;
+			reduceDir.push_back(tempOutputDir);
+			if (createDirectory(tempOutputDir) != 0) {
+				cerr << "Error: Failed to create directory " << tempOutputDir << "\n";
+				return 1;
+			}
+
+			vector<thread> reduceThreads;
 			// Create a varible to determine if all of the words have been added to the file correctly,
 			// if they have it will remain 0
 			int isSuccessful = 0;
-
-			// Loop to run through the string vector pairs in the map and use a reduce class
-			// to add the word and the vector sum to an output file in the output directory
-			vector<thread> threads1;
-			for (const auto& pair : words)
+			for (int i = 0; i < numOfFolders; i++)
 			{
-				// Creates a Reduce class that saves the output directory
-				auto pReduce = reduceFactory();
-				//if the reduce class is not created, inform the user
-				if (!pReduce) {
-					cerr << "Error: reduce factory failed\n";
-					return 1;
-				}
-				pReduce->setOutputDirectory(outputDir);
-				//// Call the reduce function that adds together the vector to create a vector sum
-				//// and outputs the key and the sum to a file in the output directory
-				//// Reduce function returns 0 if it is successful at adding it and returns 1 if unsuccessful,
-				//// that number is added to isSuccessful
-				//isSuccessful = isSuccessful + pReduce->reduce(pair.first, pair.second);
-				threads1.emplace_back(f2, pReduce, pair.first, pair.second);
+				auto pSort = sortFactory();
+				string fileName = "output" + std::to_string(i) + ".txt";
+				reduceThreads.emplace_back(f2, pSort, reduceDir[i], tempOutputDir, fileName);
+
 			}
 
-			for (auto& thr : threads1)
+
+			for (auto& thr : reduceThreads)
 			{
 				thr.join();
 
 			}
+			string fileName = "output.txt";
+			f2(sortFactory(), tempOutputDir,outputDir1, fileName);
 
+		
 			// If the previous loop was able to add all of the key, sum pairs to the file
 			// an success file is created in the output directory
 			if (isSuccessful == 0) {
