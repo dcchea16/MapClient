@@ -1,15 +1,17 @@
-﻿  FileManagementLibrary.cpp
-C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.h(29,86): warning C4190: 'readDatafromFile' has C-linkage specified, but returns UDT 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>' which is incompatible with C
-  (compiling source file '/FileManagementLibrary.cpp')
-  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
-  see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
-  
+﻿  pch.cpp
   dllmain.cpp
 C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.h(29,86): warning C4190: 'readDatafromFile' has C-linkage specified, but returns UDT 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>' which is incompatible with C
   (compiling source file '/dllmain.cpp')
   C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
   see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
   
+  FileManagementLibrary.cpp
+C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.h(29,86): warning C4190: 'readDatafromFile' has C-linkage specified, but returns UDT 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>' which is incompatible with C
+  (compiling source file '/FileManagementLibrary.cpp')
+  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
+  see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
+  
   Generating Code...
 C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.cpp(81): warning C4715: 'readAllDirectoryFileContents': not all control paths return a value
+     Creating library C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.lib and object C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.exp
   FileManagementLibrary.vcxproj -> C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.dll

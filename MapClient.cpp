@@ -21,7 +21,10 @@ their associated counts in the originating input files.*/
 #include <windows.h>
 #include <iostream>
 #include <filesystem>
+#include <thread>
+#include <mutex>
 #define DllImport   __declspec( dllimport )
+
 
 using std::string;
 using std::map;
@@ -29,6 +32,7 @@ using std::vector;
 using std::cout;
 using std::cin;
 using std::cerr;
+using std::thread;
 
 //creates typedefs for the file management functions used in this file
 typedef int (*funcIsDirectoryPresent)(const string& dirPath);
@@ -39,6 +43,15 @@ typedef int (*funcCreateFile)(const string& filePath);
 typedef PMapLibrary* (*Map_Factory)(const string&);
 typedef PReduceLibrary* (*Reduce_Factory)(const string&);
 typedef PSortLibrary* (*Sort_Factory)();
+std::mutex g_num_mutex;
+
+void f1(PMapLibrary *pMap, string dirPath, string fileContent)
+{
+    g_num_mutex.lock();
+    cout << "f1 called\n";
+    pMap->map(dirPath, fileContent);
+    g_num_mutex.unlock();
+}
 
 int main(int argc, char* argv[])
 {
@@ -71,7 +84,7 @@ int main(int argc, char* argv[])
 
     if (fileDLL != NULL && mapDLL != NULL && reduceDLL != NULL && sortDLL != NULL) {
         //loads the map class factory function from the DLL
-        auto mapFactory = reinterpret_cast<Map_Factory>(GetProcAddress(mapDLL, "createMap"));
+        Map_Factory mapFactory = (Map_Factory)GetProcAddress(mapDLL, "createMap");
         if (!mapFactory) {
             cerr << "Error: Unable to find map factory\n";
             return 1;
@@ -79,7 +92,7 @@ int main(int argc, char* argv[])
 
         //loads the reduce class factory function from the DLL
         auto reduceFactory = reinterpret_cast<Reduce_Factory>(GetProcAddress(reduceDLL, "createReduce"));
-        if (!mapFactory) {
+        if (!reduceFactory) {
             cerr << "Error: Unable to find reduce factory\n";
             return 1;
         }
@@ -140,8 +153,8 @@ int main(int argc, char* argv[])
                 cin >> tempDir;
                 tempDirectory = isDirectoryPresent(tempDir);
             }
-            tempDir1 = tempDir;
-
+            tempDir1 = "temps";
+            cout << "this is tempDir11 " << tempDir1 << "\n";
             // Check with the user if the output and temp directories can be cleared
             int userCheck = 1;
             cout << "To run the program correctly, the output and temp directories will be emptied. Is this okay? (0: no, 1: yes)\n";
@@ -156,32 +169,78 @@ int main(int argc, char* argv[])
             else
             {
                 // Ensure that the temporary directory is empty
+                cout << "this is tempDir12 " << tempDir1 << "\n";
+
                 deleteDirectoryContents(tempDir);
+                cout << "this is tempDir13 " << tempDir1 << "\n";
+
                 // Ensure that the output directory is empty
                 deleteDirectoryContents(outputDir);
             }
 
-            // Create a map class, taking in the temporary directory as a parameter
-
-            auto pMap = mapFactory(tempDir1);
-
-            //if the map class is not created, inform the user
-            if (!pMap) {
-                cerr << "Error: map factory failed\n";
-                return 1;
-            }
+            cout << "this is tempDir14 " << tempDir1 << "\n";
 
             // Iterate through the input files in the input directory
             for (const auto& entry : std::filesystem::directory_iterator(inputDir))
             {
-                // Read each file and output its contents
-                string fileContent = readDatafromFile(entry.path().string());
+                    // Use the map function to pass in the file name and the file contents
+                    cout << "path name: " << entry.path().filename().string() << "\n";
+                    cout << "this is tempDir15 " << tempDir1 << "\n";
 
-                // Use the map function to pass in the file name and the file contents
-                pMap->map(entry.path().filename().string(), fileContent);
+                    if (entry.path().filename().string() == "AMidSummerNightsDream.txt")
+                    {
+                        cout << "this is tempDir16 " << tempDir1 << "\n";
+
+                        auto pMap = mapFactory(tempDir1);
+                        cout << "this is the tempDir1-1: " << tempDir1 << "\n";
+                        // Read each file and output its contents
+                        string fileContent = readDatafromFile(entry.path().string());
+                        thread thr(f1, pMap, entry.path().filename().string(), fileContent);
+                        cout << "thread id in loop: " << thr.get_id() << "\n";
+                        thr.join();
+                        delete pMap;
+                    }
+                    else
+                    {
+                        cout << "this is tempDir17 " << tempDir1 << "\n";
+
+                        auto pMap = mapFactory(tempDir1);
+                        cout << "this is the tempDir1-2: " << tempDir1 << "\n";
+                        // Read each file and output its contents
+                        string fileContent = readDatafromFile(entry.path().string());
+                        thread thr1(f1, pMap, entry.path().filename().string(), fileContent);
+                        cout << "thread id in loop: " << thr1.get_id() << "\n";
+                        cout << "this is tempDir21 " << tempDir1 << "\n";
+                        thr1.join();
+                        cout << "this is tempDir20 " << tempDir1 << "\n";
+                        delete pMap;
+                        cout << "this is tempDir19 " << tempDir1 << "\n";
+                    }
+                    //release memory used by map
+                    cout << "this is tempDir18 " << tempDir1 << "\n";
             }
-            //release memory used by map class
-            delete pMap;
+
+            //// Create a map class, taking in the temporary directory as a parameter
+
+            //auto pMap = mapFactory(tempDir1);
+
+            ////if the map class is not created, inform the user
+            //if (!pMap) {
+            //    cerr << "Error: map factory failed\n";
+            //    return 1;
+            //}
+
+            //// Iterate through the input files in the input directory
+            //for (const auto& entry : std::filesystem::directory_iterator(inputDir))
+            //{
+            //    // Read each file and output its contents
+            //    string fileContent = readDatafromFile(entry.path().string());
+
+            //    // Use the map function to pass in the file name and the file contents
+            //    pMap->map(entry.path().filename().string(), fileContent);
+            //}
+            ////release memory used by map class
+            //delete pMap;
 
             // Create a Sort class
             auto pSort = sortFactory();
