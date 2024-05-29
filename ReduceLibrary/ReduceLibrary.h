@@ -16,7 +16,7 @@ class PReduceLibrary {
 public:
 	//virtual reduce function
 	virtual int reduce(string key, vector<int> count) { return 1; };
-	virtual void setOutputDirectory(string inputDir) {};
+	virtual void setOutputDirectory(string inputDir, string fileName) {};
 };
 
 class ReduceLibrary : public PReduceLibrary
@@ -30,7 +30,7 @@ public:
 	// and passes the sum and key to the export function to output it to a file
 	int reduce(string keyInput, vector<int> countInput);
 
-	void setOutputDirectory(string inputDir);
+	void setOutputDirectory(string inputDir, string fileName);
 private:
 	// Export function called by reduce function that accepts the key and vector sum,
 	// it creates a file in the theDir directory if it does not exist and adds the key and interger to the file
@@ -38,6 +38,7 @@ private:
 
 	// Variable to hold the directory that is used in the exportReduce function
 	string theDir;
+	string fileName;
 
 };
 
