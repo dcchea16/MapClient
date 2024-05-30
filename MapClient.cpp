@@ -25,7 +25,6 @@ their associated counts in the originating input files.*/
 #include <future>
 #define DllImport   __declspec( dllimport )
 
-
 using std::string;
 using std::map;
 using std::vector;
@@ -48,19 +47,18 @@ typedef string(*funcReadDatafromFile)(const string& filePath);
 typedef int (*funcCreateFile)(const string& filePath);
 typedef int (*funcWriteToFile)(const string&, const string&);
 typedef int (*funcDeleteFolder)(const string&);
-typedef PMap* (*Map_Factory)();
+typedef PMapLibrary* (*Map_Factory)();
 typedef PReduceLibrary* (*Reduce_Factory)();
-typedef PSort* (*Sort_Factory)();
-
+typedef PSortLibrary* (*Sort_Factory)();
 
 //function run by map threads that maps the words in the file to the file name
-void f1(PMap* pMap, string dirPath, string fileContent)
+void f1(PMapLibrary* pMap, string dirPath, string fileContent)
 {
 	pMap->map(dirPath, fileContent);
 }
 
 //function run by the reduce threads that reduces the words in the file to the output file
-int f2(PSort* pSort, string tempDir, string outputDir, string fileName)
+int f2(PSortLibrary* pSort, string tempDir, string outputDir, string fileName)
 {
 	// Call the create_word_map function, which goes through the temp directory and returns a map
 		// with all the words in the temp directory files and a vector of of the numbers associated with the word
@@ -68,7 +66,7 @@ int f2(PSort* pSort, string tempDir, string outputDir, string fileName)
 	// Load the DLLs
 	int isSuccessful = 0;
 	HINSTANCE reduceDLL;
-	const wchar_t* reducelibName = L"Reduce";
+	const wchar_t* reducelibName = L"ReduceLibrary";
 	reduceDLL = LoadLibraryEx(reducelibName, NULL, NULL);
 	if (reduceDLL != NULL) {
 		//loads the reduce class factory function from the DLL
@@ -115,9 +113,9 @@ int main(int argc, char* argv[])
 	HINSTANCE mapDLL;
 	HINSTANCE reduceDLL;
 	HINSTANCE sortDLL;
-	const wchar_t* filelibName = L"FileManagement";
+	const wchar_t* filelibName = L"FileManagementLibrary";
 	const wchar_t* maplibName = L"MapLibrary";
-	const wchar_t* reducelibName = L"Reduce";
+	const wchar_t* reducelibName = L"ReduceLibrary";
 	const wchar_t* sortlibName = L"SortLibrary";
 
 	fileDLL = LoadLibraryEx(filelibName, NULL, NULL);
@@ -136,7 +134,6 @@ int main(int argc, char* argv[])
 	// For this program, the temp directory name is "temps"
 	string tempDir;
 	string tempDir1;
-	string tempDir2 = "temps";
 
 	if (fileDLL != NULL && mapDLL != NULL && reduceDLL != NULL && sortDLL != NULL) {
 		//loads the map class factory function from the DLL
@@ -162,7 +159,6 @@ int main(int argc, char* argv[])
 		funcCreateDirectory createDirectory = (funcCreateDirectory)GetProcAddress(fileDLL, "createDirectory");
 		funcWriteToFile writeDataToFile = (funcWriteToFile)GetProcAddress(fileDLL, "writeDataToFile");
 		funcDeleteFolder deleteFolder = (funcDeleteFolder)GetProcAddress(fileDLL, "deleteFolder");
-
 
 		//if the file management functions are found proceed with program
 		if (isDirectoryPresent != NULL && isDirectoryEmpty != NULL && deleteDirectoryContents != NULL && readDatafromFile != NULL && createFile != NULL) {
@@ -206,7 +202,7 @@ int main(int argc, char* argv[])
 				cin >> tempDir;
 				tempDirectory = isDirectoryPresent(tempDir);
 			}
-			tempDir1 = "temps";
+			tempDir1 = tempDir;
 			// Check with the user if the output and temp directories can be cleared
 			int userCheck = 1;
 			cout << "To run the program correctly, the output and temp directories will be emptied. Is this okay? (0: no, 1: yes)\n";
@@ -228,6 +224,7 @@ int main(int argc, char* argv[])
 
 			// Create a vector of threads to run the map function
 			vector<thread> mapThreads;
+
 			// Iterate through the input files in the input directory
 			for (const auto& entry : std::filesystem::directory_iterator(inputDir))
 			{
@@ -239,7 +236,7 @@ int main(int argc, char* argv[])
 				// Create a thread to run the map function
 				mapThreads.emplace_back(f1, pMap, entry.path().filename().string(), fileContent);
 			}
-
+			
 			// Wait for all the threads to finish
 			for (auto& thr : mapThreads)
 			{
@@ -263,7 +260,8 @@ int main(int argc, char* argv[])
 
 			//variable used as a counter to determine which folder the file will be placed in
 			int fileNumber = 1;
-			for (const auto& entry : std::filesystem::directory_iterator(tempDir)) {
+			for (const auto& entry : std::filesystem::directory_iterator(tempDir))
+			{
 
 				// Skip the file if it is a directory
 				//variable to hold the name of the current file
@@ -271,13 +269,16 @@ int main(int argc, char* argv[])
 				//variable to determine if the file name matches any of the folder names
 				bool isFolderName = false;
 				//cycle through the folder names to check if the file name matches
-				for (const auto& folderName : reduceDir) {
-					if (fileName == std::filesystem::path(folderName).filename().string()) {
+				for (const auto& folderName : reduceDir)
+				{
+					if (fileName == std::filesystem::path(folderName).filename().string())
+					{
 						isFolderName = true;
 						break;
 					}
 				}
-				if (isFolderName) {
+				if (isFolderName)
+				{
 					continue; // Skip this file if its name matches any folder name in reduceDir
 				}
 
@@ -298,11 +299,11 @@ int main(int argc, char* argv[])
 				fileNumber++;
 			}
 
-
 			//create a directory to hold the intermediate output files
 			string tempOutputDir = tempDir + "\\tempOutput" ;
 			reduceDir.push_back(tempOutputDir);
-			if (createDirectory(tempOutputDir) != 0) {
+			if (createDirectory(tempOutputDir) != 0)
+			{
 				cerr << "Error: Failed to create directory " << tempOutputDir << "\n";
 				return 1;
 			}
@@ -320,16 +321,24 @@ int main(int argc, char* argv[])
 				//determine the output file name
 				string fileName = "output" + to_string(i) + ".txt";
 				// Create a thread to run the sort and reduce functions the function will return 0 if successful and 1 if not, the result is added to the results vector
-				reduceThreads.emplace_back([&results, &mtx, pSort, reduceDir, tempOutputDir, fileName, i]() {
-					int result = f2(pSort, reduceDir[i], tempOutputDir, fileName);
+				reduceThreads.emplace_back([&results, &mtx, pSort, reduceDir, tempOutputDir, fileName, i]()
 					{
-						lock_guard<mutex> lock(mtx);
-						results.push_back(result);
-					}
+						int result = f2(pSort, reduceDir[i], tempOutputDir, fileName);
+						{
+							lock_guard<mutex> lock(mtx);
+							results.push_back(result);
+						}
 					});
-
 			}
-
+	
+			//variable to hold the sum of the results vector
+			int isSuccessful = 0;
+			//cycle through the results vector and add the results to the isSuccessful variable
+			for (const auto& result : results)
+			{
+				isSuccessful += result;
+				cout << "go through results: " << isSuccessful;
+			}
 			// Wait for all the threads to finish
 			for (auto& thr : reduceThreads)
 			{
@@ -337,26 +346,23 @@ int main(int argc, char* argv[])
 
 			}
 
-			//variable to hold the sum of the results vector
-			int isSuccessful = 0;
-			//cycle through the results vector and add the results to the isSuccessful variable
-			for (const auto& result : results) {
-				isSuccessful += result;
-			}
-
 			// Create a variable to hold the output file name
 			string fileName = "output.txt";
 			//calls function that runs sort and reduce on the temp output directory
 			isSuccessful += f2(sortFactory(), tempOutputDir,outputDir1, fileName);
+			cout << "call function: " << isSuccessful;
 
 			//Delete the temp reduce directories
-			for (auto folder: reduceDir) {
+			for (auto folder: reduceDir)
+			{
 				isSuccessful += deleteFolder(folder);
+				cout << "temp folder delete: " << isSuccessful;
 			}
 		
 			// If the previous loop was able to add all of the key, sum pairs to the file
 			// an success file is created in the output directory
-			if (isSuccessful == 0) {
+			if (isSuccessful == 0)
+			{
 				int createOutput = createFile(outputDir1 + "\\Success.txt");
 			}
 
@@ -364,7 +370,8 @@ int main(int argc, char* argv[])
 			cout << "\nProgram complete.\n";
 		}
 		//inform user if the file management functions are not found
-		else {
+		else
+		{
 			cerr << "Error: Function not found in one of the DLLs.\n";
 		}
 
@@ -375,7 +382,8 @@ int main(int argc, char* argv[])
 		FreeLibrary(sortDLL);
 	}
 	//if the DLLs don't load inform user
-	else {
+	else
+	{
 		cerr << "Error: Failed to load one or more DLLs.\n";
 	}
 }

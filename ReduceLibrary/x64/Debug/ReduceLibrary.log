@@ -6,10 +6,11 @@ C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrar
   C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
   see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
   
-C:\Users\dchea\source\repos\MapClient\ReduceLibrary\ReduceLibrary.cpp(61,36): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+C:\Users\dchea\source\repos\MapClient\ReduceLibrary\ReduceLibrary.cpp(62,36): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
   (compiling source file '/ReduceLibrary.cpp')
   
   Generating Code...
      Creating library C:\Users\dchea\source\repos\MapClient\ReduceLibrary\x64\Debug\ReduceLibrary.lib and object C:\Users\dchea\source\repos\MapClient\ReduceLibrary\x64\Debug\ReduceLibrary.exp
   ReduceLibrary.vcxproj -> C:\Users\dchea\source\repos\MapClient\ReduceLibrary\x64\Debug\ReduceLibrary.dll
-  0 File(s) copied
+  C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.dll
+  1 File(s) copied
