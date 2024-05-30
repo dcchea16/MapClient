@@ -337,7 +337,6 @@ int main(int argc, char* argv[])
 			for (const auto& result : results)
 			{
 				isSuccessful += result;
-				cout << "go through results: " << isSuccessful;
 			}
 			// Wait for all the threads to finish
 			for (auto& thr : reduceThreads)
@@ -350,13 +349,11 @@ int main(int argc, char* argv[])
 			string fileName = "output.txt";
 			//calls function that runs sort and reduce on the temp output directory
 			isSuccessful += f2(sortFactory(), tempOutputDir,outputDir1, fileName);
-			cout << "call function: " << isSuccessful;
 
 			//Delete the temp reduce directories
 			for (auto folder: reduceDir)
 			{
 				isSuccessful += deleteFolder(folder);
-				cout << "temp folder delete: " << isSuccessful;
 			}
 		
 			// If the previous loop was able to add all of the key, sum pairs to the file
