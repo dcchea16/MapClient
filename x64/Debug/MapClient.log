@@ -4,12 +4,12 @@ C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrar
   C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(5127,29):
   see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
   
-C:\Users\dchea\source\repos\MapClient\MapClient.cpp(168,39): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\dchea\source\repos\MapClient\MapClient.cpp(179,40): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\dchea\source\repos\MapClient\MapClient.cpp(190,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\dchea\source\repos\MapClient\MapClient.cpp(214,37): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\dchea\source\repos\MapClient\MapClient.cpp(228,39): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\dchea\source\repos\MapClient\MapClient.cpp(244,39): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\dchea\source\repos\MapClient\MapClient.cpp(170,39): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\dchea\source\repos\MapClient\MapClient.cpp(181,40): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\dchea\source\repos\MapClient\MapClient.cpp(192,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\dchea\source\repos\MapClient\MapClient.cpp(215,37): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\dchea\source\repos\MapClient\MapClient.cpp(230,39): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\dchea\source\repos\MapClient\MapClient.cpp(246,41): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
   MapClient.vcxproj -> C:\Users\dchea\source\repos\MapClient\x64\Debug\MapClient.exe
   0 File(s) copied
   0 File(s) copied

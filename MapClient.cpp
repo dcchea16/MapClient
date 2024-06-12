@@ -28,6 +28,8 @@ their associated counts in the originating input files.*/
 
 #pragma comment(lib, "Ws2_32.lib")
 
+// Define ports for the sockets, ip address,
+// and a buffer length to be used to send the messages
 #define PORT 8080
 #define SERVER_IP "127.0.0.1"
 #define BUFLEN 512
@@ -208,9 +210,8 @@ int main(int argc, char* argv[])
 				deleteDirectoryContents(outputDir);
 			}
 
-			// Send data to the server
-
-			char buffer[BUFLEN] = "1";
+			// Send data to the server, starting with map processes
+			char buffer[BUFLEN] = "Map";
 			send(clientSocket, buffer, strlen(buffer), 0);
 
 			// Receive response from the server
@@ -220,10 +221,11 @@ int main(int argc, char* argv[])
 				std::cout << "Response from server: " << buffer << std::endl;
 			}
 
-			string bufferInput = buffer;
-			if (bufferInput == "Complete")
+			// Send data to the server, creating reduce processes once map is finished
+			string bufferInputMap = buffer;
+			if (bufferInputMap == "Map Complete")
 			{
-				char buffer2[BUFLEN] = "2";
+				char buffer2[BUFLEN] = "Reduce";
 				// Send data to the server
 				send(clientSocket, buffer2, strlen(buffer2), 0);
 
@@ -235,13 +237,13 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			string bufferInput2 = buffer;
-
-			if (bufferInput2 == "Complete2")
+			// Once map and reduce is complete, terminate server
+			string bufferInputReduce = buffer;
+			if (bufferInputReduce == "Reduce Complete")
 			{
-				char buffer3[BUFLEN] = "3";
+				char bufferEnd[BUFLEN] = "End";
 				// Send data to the server
-				send(clientSocket, buffer3, strlen(buffer3), 0);
+				send(clientSocket, bufferEnd, strlen(bufferEnd), 0);
 			}
 		}
 		//inform user if the file management functions are not found

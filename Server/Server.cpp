@@ -38,6 +38,8 @@ typedef PReduceLibrary* (*Reduce_Factory)();
 typedef PSortLibrary* (*Sort_Factory)();
 #pragma comment(lib, "Ws2_32.lib")
 
+// Define ports for the sockets
+// and a buffer length to be used to send the messages
 #define PORT 8080
 #define BUFLEN 512
 
@@ -97,6 +99,8 @@ int sortFunction(PSortLibrary* pSort, string tempDir, string outputDir, string f
 }
 
 int main() {
+
+	// Begin setup for the sockets
 	WSADATA wsaData;
 	SOCKET serverSocket, clientSocket;
 	sockaddr_in serverAddr, clientAddr;
@@ -138,7 +142,7 @@ int main() {
 		return 1;
 	}
 
-	std::cout << "Waiting for connections...\n";
+	std::cout << "Waiting for client connections...\n";
 
 	// Accept a client socket
 	clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrSize);
@@ -149,7 +153,7 @@ int main() {
 		return 1;
 	}
 
-	std::cout << "Client connected.\n";
+	std::cout << "Map Client connected.\n";
 
 	// Load the DLLs
 	HINSTANCE fileDLL;
@@ -176,31 +180,29 @@ int main() {
 	// For this program, the temp directory name is "temps"
 	string tempDir;
 
-	// Receive data from the client
-	int bytesReceived1 = recv(clientSocket, buffer, BUFLEN, 0);
-	if (bytesReceived1 > 0)
+	// Receive data from the client for the input directory
+	int bytesReceivedInput = recv(clientSocket, buffer, BUFLEN, 0);
+	if (bytesReceivedInput > 0)
 	{
-		buffer[bytesReceived1] = '\0'; // Null-terminate the received data
+		buffer[bytesReceivedInput] = '\0'; // Null-terminate the received data
 		inputDir = "..\\" + (string)buffer;
-		std::cout << "Message from client bytes received: " << buffer << std::endl;
 	}
 
-	int bytesReceived2 = recv(clientSocket, buffer, BUFLEN, 0);
-	if (bytesReceived2 > 0)
+	// Receive data from the client for the output directory
+	int bytesReceivedOutput = recv(clientSocket, buffer, BUFLEN, 0);
+	if (bytesReceivedOutput > 0)
 	{
-		buffer[bytesReceived2] = '\0'; // Null-terminate the received data
+		buffer[bytesReceivedOutput] = '\0'; // Null-terminate the received data
 		outputDir = "..\\" + (string)buffer;
-		std::cout << "Message from client bytes received: " << buffer << std::endl;
 	}
 
-	int bytesReceived3 = recv(clientSocket, buffer, BUFLEN, 0);
-	if (bytesReceived3 > 0)
+	// Receive data from the client for the temp directory
+	int bytesReceivedTemp = recv(clientSocket, buffer, BUFLEN, 0);
+	if (bytesReceivedTemp > 0)
 	{
-		buffer[bytesReceived3] = '\0'; // Null-terminate the received data
+		buffer[bytesReceivedTemp] = '\0'; // Null-terminate the received data
 		tempDir = "..\\" + (string)buffer;
-		std::cout << "Message from client bytes received: " << buffer << std::endl;
 	}
-
 
 	if (fileDLL != NULL && mapDLL != NULL && reduceDLL != NULL && sortDLL != NULL) {
 		//loads the map class factory function from the DLL
@@ -227,28 +229,25 @@ int main() {
 		funcWriteToFile writeDataToFile = (funcWriteToFile)GetProcAddress(fileDLL, "writeDataToFile");
 		funcDeleteFolder deleteFolder = (funcDeleteFolder)GetProcAddress(fileDLL, "deleteFolder");
 
-		std::cout << "Message from client directory loading: " << buffer << std::endl;
-
 		//if the file management functions are found proceed with program
-		if (isDirectoryPresent != NULL && isDirectoryEmpty != NULL && deleteDirectoryContents != NULL && readDatafromFile != NULL && createFile != NULL) {
-
-			std::cout << "Message from client directory present: " << buffer << std::endl;
-
-			string bufferInput3;
-			while (bufferInput3 != "3")
+		if (isDirectoryPresent != NULL && isDirectoryEmpty != NULL && deleteDirectoryContents != NULL && readDatafromFile != NULL && createFile != NULL)
+		{
+			string bufferInputEnd;
+			// Continue to loop for messages being received until message "End" is received
+			while (bufferInputEnd != "End")
 			{
+				// Receive the buffer to see which processes to create
+				// If the buffer is Map, create the Map processes
+				// If the buffer is Reduce, create the Reduce processes
 				int bytesReceived = recv(clientSocket, buffer, BUFLEN, 0);
-				bufferInput3 = buffer;
+				bufferInputEnd = buffer;
 				if (bytesReceived > 0) {
 
 					buffer[bytesReceived] = '\0'; // Null-terminate the received data
 
-					std::cout << "Message from client response: " << buffer << std::endl;
-
-					string bufferInput = buffer;
-					if (bufferInput == "1")
+					string bufferInputMap = buffer;
+					if (bufferInputMap == "Map")
 					{
-						std::cout << "Message from client: " << buffer << std::endl;
 						// Create a vector of threads to run the map function
 						vector<thread> mapThreads;
 
@@ -273,34 +272,27 @@ int main() {
 							thr.join();
 						}
 						// Send response to the client
-						const char* response = "Complete";
+						const char* response = "Map Complete";
 						send(clientSocket, response, strlen(response), 0);
 					}
 
-					std::cout << "Message from client end of buffer1: " << buffer << std::endl;
-
-					string bufferInput2 = buffer;
-					if (bufferInput2 == "2")
+					// begin Reduce processes
+					string bufferInputReduce = buffer;
+					if (bufferInputReduce == "Reduce")
 					{
-						std::cout << "Message from client2: " << buffer << std::endl;
-
 						//variable to hold the number of folders the temp files will be divided into
 						int numOfFolders = 4;
 						//varible to hold the names of the folders
 						vector<string> reduceDir;
-
-						cout << "this is the tempDir1" << tempDir << "\n";
 						// Create the reduce directories
 						for (int i = 0; i < numOfFolders; i++) {
 							string reduceDirName = tempDir + "\\reduceDir" + to_string(i);
-							cout << "This is the reducedirName " << reduceDirName << "\n";
 							reduceDir.push_back(reduceDirName);
 							if (createDirectory(reduceDirName) != 0) {
 								cerr << "Error: Failed to create directory " << reduceDirName << "\n";
 								return 1;
 							}
 						}
-						cout << "this is the tempDir2" << tempDir << "\n";
 
 						//variable used as a counter to determine which folder the file will be placed in
 						int fileNumber = 1;
@@ -408,11 +400,10 @@ int main() {
 						// Program is complete
 						cout << "\nProgram complete.\n";
 						// Send response to the client
-						const char* response = "Complete2";
+						const char* response = "Reduce Complete";
 						send(clientSocket, response, strlen(response), 0);
 					}
 				}
-				//inform user if the file management functions are not found
 			}
 
 			//free the libraries loabed
