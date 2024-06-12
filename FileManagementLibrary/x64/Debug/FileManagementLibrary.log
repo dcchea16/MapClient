@@ -12,6 +12,5 @@ C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrar
   see declaration of 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>'
   
   Generating Code...
-C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\FileManagementLibrary.cpp(86): warning C4715: 'readAllDirectoryFileContents': not all control paths return a value
      Creating library C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.lib and object C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.exp
   FileManagementLibrary.vcxproj -> C:\Users\dchea\source\repos\MapClient\FileManagementLibrary\x64\Debug\FileManagementLibrary.dll

@@ -1,0 +1,3 @@
+C:\Users\dchea\source\repos\Server\Server\x64\Debug\Server.exe
+C:\Users\dchea\source\repos\MapClient\Server\Server\x64\Debug\Server.exe
+C:\Users\dchea\source\repos\MapClient\Server\x64\Debug\Server.exe

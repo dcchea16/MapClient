@@ -83,6 +83,8 @@ FILEMANAGEMENTLIBRARY_API int readAllDirectoryFileContents(const string& dirPath
 		// Write data from each file to the single output file
 		writeDataToFile(dirPath + "\\allWords.txt", contents);
 	}
+
+	return 0;
 }
 
 // Function that will delete all file contents from a directory, given a directory path as dirPath

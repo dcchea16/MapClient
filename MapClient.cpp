@@ -18,12 +18,19 @@ their associated counts in the originating input files.*/
 #include "FileManagementLibrary.h"
 #include "ReduceLibrary.h"
 #include "SortLibrary.h"
-#include <windows.h>
 #include <iostream>
 #include <filesystem>
 #include <thread>
 #include <future>
+#include <winsock2.h>
+#include <WS2tcpip.h>
 #define DllImport   __declspec( dllimport )
+
+#pragma comment(lib, "Ws2_32.lib")
+
+#define PORT 8080
+#define SERVER_IP "127.0.0.1"
+#define BUFLEN 512
 
 using std::string;
 using std::map;
@@ -51,63 +58,39 @@ typedef PMapLibrary* (*Map_Factory)();
 typedef PReduceLibrary* (*Reduce_Factory)();
 typedef PSortLibrary* (*Sort_Factory)();
 
-//function run by map threads that maps the words in the file to the file name
-void f1(PMapLibrary* pMap, string dirPath, string fileContent)
-{
-	pMap->map(dirPath, fileContent);
-}
-
-//function run by the reduce threads that reduces the words in the file to the output file
-int f2(PSortLibrary* pSort, string tempDir, string outputDir, string fileName)
-{
-	// Call the create_word_map function, which goes through the temp directory and returns a map
-		// with all the words in the temp directory files and a vector of of the numbers associated with the word
-	map <string, vector<int>> words = pSort->create_word_map(tempDir);
-	// Load the DLLs
-	int isSuccessful = 0;
-	HINSTANCE reduceDLL;
-	const wchar_t* reducelibName = L"ReduceLibrary";
-	reduceDLL = LoadLibraryEx(reducelibName, NULL, NULL);
-	if (reduceDLL != NULL) {
-		//loads the reduce class factory function from the DLL
-		auto reduceFactory = reinterpret_cast<Reduce_Factory>(GetProcAddress(reduceDLL, "createReduce"));
-		if (!reduceFactory) {
-			cerr << "Error: Unable to find reduce factory\n";
-			return 1;
-		}
-
-		// Loop to run through the string vector pairs in the map and use a reduce class
-		// to add the word and the vector sum to an output file in the output directory
-		for (const auto& pair : words)
-		{
-
-			// Creates a Reduce class that saves the output directory
-			auto pReduce = reduceFactory();
-			//if the reduce class is not created, inform the user
-			if (!pReduce) {
-				cerr << "Error: reduce factory failed\n";
-				return 1;
-			}
-			pReduce->setOutputDirectory(outputDir, fileName);
-			//// Call the reduce function that adds together the vector to create a vector sum
-			//// and outputs the key and the sum to a file in the output directory
-			//// Reduce function returns 0 if it is successful at adding it and returns 1 if unsuccessful,
-			//// that number is added to isSuccessful
-			//isSuccessful = isSuccessful + pReduce->reduce(pair.first, pair.second);
-			isSuccessful = isSuccessful + pReduce->reduce(pair.first, pair.second);
-		}
-	}
-	else {
-		//let the user know if the reduce library is not loaded
-		cerr << "Error:Unable to load Reduce Library.";
-		isSuccessful = 1;
-	}
-	//return 0 if successful and 1 if not
-	return isSuccessful;
-}
-
 int main(int argc, char* argv[])
 {
+	WSADATA wsaData;
+	SOCKET clientSocket;
+	sockaddr_in serverAddr;
+
+	// Initialize Winsock
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+		std::cerr << "WSAStartup failed.\n";
+		return 1;
+	}
+
+	// Create a socket
+	clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if (clientSocket == INVALID_SOCKET) {
+		std::cerr << "Socket creation failed.\n";
+		WSACleanup();
+		return 1;
+	}
+
+	// Prepare the sockaddr_in structure
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_port = htons(PORT);
+	inet_pton(AF_INET, SERVER_IP, &serverAddr.sin_addr);
+
+	// Connect to the server
+	if (connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+		std::cerr << "Connect failed.\n";
+		closesocket(clientSocket);
+		WSACleanup();
+		return 1;
+	}
+
 	// Load the DLLs
 	HINSTANCE fileDLL;
 	HINSTANCE mapDLL;
@@ -127,13 +110,11 @@ int main(int argc, char* argv[])
 	cout << "********** MapReduce Application **********\n\n";
 
 	// For this program, the input directory name is "inputs"
-	string inputDir;
+	char inputDir[BUFLEN];
 	// For this program, the output directory name is "outputs"
-	string outputDir;
-	string outputDir1;
+	char outputDir[BUFLEN];
 	// For this program, the temp directory name is "temps"
-	string tempDir;
-	string tempDir1;
+	char tempDir[BUFLEN];
 
 	if (fileDLL != NULL && mapDLL != NULL && reduceDLL != NULL && sortDLL != NULL) {
 		//loads the map class factory function from the DLL
@@ -184,6 +165,8 @@ int main(int argc, char* argv[])
 				}
 			}
 
+			send(clientSocket, inputDir, strlen(inputDir), 0);
+
 			// Prompt user for output directory
 			int outputDirectory = 1;
 			while (outputDirectory)
@@ -192,7 +175,8 @@ int main(int argc, char* argv[])
 				cin >> outputDir;
 				outputDirectory = isDirectoryPresent(outputDir);
 			}
-			outputDir1 = outputDir;
+
+			send(clientSocket, outputDir, strlen(outputDir), 0);
 
 			// Prompt user for temporary directory
 			int tempDirectory = 1;
@@ -202,7 +186,9 @@ int main(int argc, char* argv[])
 				cin >> tempDir;
 				tempDirectory = isDirectoryPresent(tempDir);
 			}
-			tempDir1 = tempDir;
+
+			send(clientSocket, tempDir, strlen(tempDir), 0);
+
 			// Check with the user if the output and temp directories can be cleared
 			int userCheck = 1;
 			cout << "To run the program correctly, the output and temp directories will be emptied. Is this okay? (0: no, 1: yes)\n";
@@ -222,149 +208,41 @@ int main(int argc, char* argv[])
 				deleteDirectoryContents(outputDir);
 			}
 
-			// Create a vector of threads to run the map function
-			vector<thread> mapThreads;
+			// Send data to the server
 
-			// Iterate through the input files in the input directory
-			for (const auto& entry : std::filesystem::directory_iterator(inputDir))
-			{
-				// Create a map object
-				auto pMap = mapFactory();
-				pMap->setTempDirectory(tempDir1);
-				// Read each file and output its contents
-				string fileContent = readDatafromFile(entry.path().string());
-				// Create a thread to run the map function
-				mapThreads.emplace_back(f1, pMap, entry.path().filename().string(), fileContent);
-			}
-			
-			// Wait for all the threads to finish
-			for (auto& thr : mapThreads)
-			{
-				thr.join();
+			char buffer[BUFLEN] = "1";
+			send(clientSocket, buffer, strlen(buffer), 0);
+
+			// Receive response from the server
+			int bytesReceived = recv(clientSocket, buffer, BUFLEN, 0);
+			if (bytesReceived > 0) {
+				buffer[bytesReceived] = '\0'; // Null-terminate the received data
+				std::cout << "Response from server: " << buffer << std::endl;
 			}
 
-			//variable to hold the number of folders the temp files will be divided into
-			int numOfFolders = 4;
-			//varible to hold the names of the folders
-			vector<string> reduceDir;
+			string bufferInput = buffer;
+			if (bufferInput == "Complete")
+			{
+				char buffer2[BUFLEN] = "2";
+				// Send data to the server
+				send(clientSocket, buffer2, strlen(buffer2), 0);
 
-			// Create the reduce directories
-			for (int i = 0; i < numOfFolders; i++) {
-				string reduceDirName = tempDir + "\\reduceDir" + to_string(i);
-				reduceDir.push_back(reduceDirName);
-				if (createDirectory(reduceDirName) != 0) {
-					cerr << "Error: Failed to create directory " << reduceDirName << "\n";
-					return 1;
+				// Receive response from the server
+				int bytesReceived = recv(clientSocket, buffer, BUFLEN, 0);
+				if (bytesReceived > 0) {
+					buffer[bytesReceived] = '\0'; // Null-terminate the received data
+					std::cout << "Response from server: " << buffer << std::endl;
 				}
 			}
 
-			//variable used as a counter to determine which folder the file will be placed in
-			int fileNumber = 1;
-			for (const auto& entry : std::filesystem::directory_iterator(tempDir))
+			string bufferInput2 = buffer;
+
+			if (bufferInput2 == "Complete2")
 			{
-
-				// Skip the file if it is a directory
-				//variable to hold the name of the current file
-				string fileName = entry.path().filename().string();
-				//variable to determine if the file name matches any of the folder names
-				bool isFolderName = false;
-				//cycle through the folder names to check if the file name matches
-				for (const auto& folderName : reduceDir)
-				{
-					if (fileName == std::filesystem::path(folderName).filename().string())
-					{
-						isFolderName = true;
-						break;
-					}
-				}
-				if (isFolderName)
-				{
-					continue; // Skip this file if its name matches any folder name in reduceDir
-				}
-
-				// Determine which folder the file will be placed in
-				int folderNumber = fileNumber % numOfFolders;
-				// Create the file in the appropriate reduce directory
-				string reduceFileName = reduceDir[folderNumber] + "\\" + entry.path().filename().string();
-				if (createFile(reduceFileName) != 0) {
-					cerr << "Error: Failed to create file " << reduceFileName << "\n";
-					return 1;
-				}
-				// Read the file and write its contents to the file in the reduce folder
-				string fileContent = readDatafromFile(entry.path().string());
-				if (writeDataToFile(reduceFileName, fileContent) != 0) {
-					cerr << "Error: Failed to write data to file " << reduceFileName << "\n";
-					return 1;
-				}
-				fileNumber++;
+				char buffer3[BUFLEN] = "3";
+				// Send data to the server
+				send(clientSocket, buffer3, strlen(buffer3), 0);
 			}
-
-			//create a directory to hold the intermediate output files
-			string tempOutputDir = tempDir + "\\tempOutput" ;
-			reduceDir.push_back(tempOutputDir);
-			if (createDirectory(tempOutputDir) != 0)
-			{
-				cerr << "Error: Failed to create directory " << tempOutputDir << "\n";
-				return 1;
-			}
-
-			//vector of threads to run the sort and reduce function
-			vector<thread> reduceThreads;
-			//vector to hold the results of the threads
-			vector<int> results;
-			//lock to ensure that the results vector is not accessed by multiple threads at the same time
-			mutex mtx;
-			for (int i = 0; i < numOfFolders; i++)
-			{
-				// Create a sort object
-				auto pSort = sortFactory();
-				//determine the output file name
-				string fileName = "output" + to_string(i) + ".txt";
-				// Create a thread to run the sort and reduce functions the function will return 0 if successful and 1 if not, the result is added to the results vector
-				reduceThreads.emplace_back([&results, &mtx, pSort, reduceDir, tempOutputDir, fileName, i]()
-					{
-						int result = f2(pSort, reduceDir[i], tempOutputDir, fileName);
-						{
-							lock_guard<mutex> lock(mtx);
-							results.push_back(result);
-						}
-					});
-			}
-	
-			//variable to hold the sum of the results vector
-			int isSuccessful = 0;
-			//cycle through the results vector and add the results to the isSuccessful variable
-			for (const auto& result : results)
-			{
-				isSuccessful += result;
-			}
-			// Wait for all the threads to finish
-			for (auto& thr : reduceThreads)
-			{
-				thr.join();
-
-			}
-
-			// Create a variable to hold the output file name
-			string fileName = "output.txt";
-			//calls function that runs sort and reduce on the temp output directory
-			isSuccessful += f2(sortFactory(), tempOutputDir,outputDir1, fileName);
-
-			//Delete the temp reduce directories
-			for (auto folder: reduceDir)
-			{
-				isSuccessful += deleteFolder(folder);
-			}
-		
-			// If the previous loop was able to add all of the key, sum pairs to the file
-			// an success file is created in the output directory
-			if (isSuccessful == 0)
-			{
-				int createOutput = createFile(outputDir1 + "\\Success.txt");
-			}
-
-			// Program is complete
-			cout << "\nProgram complete.\n";
 		}
 		//inform user if the file management functions are not found
 		else
@@ -377,6 +255,9 @@ int main(int argc, char* argv[])
 		FreeLibrary(mapDLL);
 		FreeLibrary(reduceDLL);
 		FreeLibrary(sortDLL);
+
+		closesocket(clientSocket);
+		WSACleanup();
 	}
 	//if the DLLs don't load inform user
 	else
